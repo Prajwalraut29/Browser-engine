@@ -16,7 +16,10 @@ public interface DomNode {
 
     // child nodes - this forms the tree structure 
     List<DomNode> getChildren();
-      
+
+    // parent node (null for the tree root) - needed for ancestor/sibling matching
+    DomNode getParent();
+
     // only meaningfull for text nodes: return null for elements 
     String getTextContent();
 

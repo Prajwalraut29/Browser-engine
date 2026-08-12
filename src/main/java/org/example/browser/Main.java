@@ -5,44 +5,42 @@ import org.example.browser.css.*;
 import org.example.browser.style.StyleResolver;
 import org.example.browser.dom.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
-        String html = "<html>\n" +
-                "            <head><style>\n" +
-                "                div { display: block; background: white; margin: 10px; }\n" +
-                "                .box { width: 200px; background: lightblue; }\n" +
-                "                #main { margin: 20px; background: #f9f9f9; }\n" +
-                "            </style></head>\n" +
-                "            <body>\n" +
-                "                <div id=\"main\">\n" +
-                "                    <p>Hello, <span style=\"color: red;\">world</span>!</p>\n" +
-                "                    <div class=\"box\">A box</div>\n" +
-                "                </div>\n" +
-                "            </body>\n" +
-                "            </html>";
+        // 1. Load the HTML file (from a filesystem path or the bundled default)
+        String html = loadText(args.length > 0 ? args[0] : "index.html");
 
         SimpleHtmlParser htmlParser = new SimpleHtmlParser();
         DomNode document = htmlParser.parse(html);
 
         // 2. Extract CSS from <style> elements
         String css = extractCss(document);
+
+        // 3. Merge external CSS file after the embedded <style> CSS
+        String externalCss = loadText(args.length > 1 ? args[1] : "style.css");
+        css = css + "\n" + externalCss;
         System.out.println("=== Extracted CSS ===");
         System.out.println(css);
 
-        // 3. Parse CSS into rules
+        // 4. Parse CSS into rules
         SimpleCssParser cssParser = new SimpleCssParser();
         List<CssRule> rules = cssParser.parse(css);
         System.out.println("\n=== Parsed " + rules.size() + " CSS rule(s) ===");
 
-        // 4. Resolve styles for all elements
+        // 5. Resolve styles for all elements
         StyleResolver resolver = new StyleResolver(rules);
         resolver.resolveTree(document, null);
 
-        // 5. Print the DOM tree with computed styles
+        // 6. Print the DOM tree with computed styles
         System.out.println("\n=== DOM tree with computed styles ===");
         printTree(document, 0);
 
@@ -62,6 +60,20 @@ public class Main {
             System.out.println(prefix + "</" + el.getNodeName() + ">");
         } else {
             System.out.println(prefix + "\"" + node.getTextContent() + "\"");
+        }
+    }
+
+    // Reads a file from the filesystem if it exists, otherwise from the
+    // classpath resources (bundled defaults).
+    private static String loadText(String path) throws IOException {
+        if (Files.exists(Path.of(path))) {
+            return Files.readString(Path.of(path));
+        }
+        try (InputStream in = Main.class.getResourceAsStream("/" + path)) {
+            if (in == null) {
+                throw new IOException("File not found on disk or in resources: " + path);
+            }
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 

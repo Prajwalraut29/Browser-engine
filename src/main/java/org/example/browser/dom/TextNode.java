@@ -26,6 +26,11 @@ public class TextNode implements DomNode {
         return Collections.emptyList();
     }
 
+    @Override  // text nodes have no parent pointer
+    public DomNode getParent() {
+        return null;
+    }
+
     @Override
     public String getTextContent() {
         return text;

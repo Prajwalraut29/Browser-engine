@@ -47,6 +47,7 @@ public class SimpleHtmlParser {
                 if (pos < input.length() && input.charAt(pos) == '>') pos++;
 
                 ElementNode element = new ElementNode(tag, attrs);
+                element.setParent(parent);
                 parent.getChildren().add(element);
 
                 // If not self-closing and not a void element, parse its children
