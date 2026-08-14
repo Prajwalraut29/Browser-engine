@@ -15,6 +15,12 @@ public class StyleResolver {
     private static final Set<String> UNSUPPORTED_PSEUDO =
             Set.of("hover", "active", "focus", "visited", "link");
 
+    private static final Set<String> BLOCK_TAGS = Set.of(
+            "html", "body", "div", "p", "h1", "h2", "h3", "h4", "h5", "h6",
+            "ul", "ol", "li", "dl", "dt", "dd", "blockquote", "pre", "form",
+            "section", "article", "nav", "header", "footer", "aside", "main",
+            "figure", "figcaption", "table", "thead", "tbody", "tfoot", "tr", "td", "th", "hr");
+
     private static final Pattern NTH_PATTERN = Pattern.compile("([+-]?\\d*)n([+-]\\d+)?");
 
     public StyleResolver(List<CssRule> rules) {
@@ -33,7 +39,7 @@ public class StyleResolver {
             ElementNode el = (ElementNode) root;
 
             // 1. Browser defaults
-            Map<String, String> style = new HashMap<>(getDefaultStyle());
+            Map<String, String> style = new HashMap<>(getDefaultStyle(el));
 
             // 2. Inherit properties from the parent
             if (parent != null && parent.getComputedStyle() != null) {
@@ -360,10 +366,11 @@ public class StyleResolver {
 
     /**
      * Provides the default style for every element (like a user-agent stylesheet).
+     * Block-level HTML elements are display:block by default; everything else is inline.
      */
-    private Map<String, String> getDefaultStyle() {
+    private Map<String, String> getDefaultStyle(ElementNode el) {
         Map<String, String> d = new HashMap<>();
-        d.put("display", "inline");
+        d.put("display", BLOCK_TAGS.contains(el.getNodeName()) ? "block" : "inline");
         d.put("margin-top", "0"); d.put("margin-right", "0"); d.put("margin-bottom", "0"); d.put("margin-left", "0");
         d.put("padding-top", "0"); d.put("padding-right", "0"); d.put("padding-bottom", "0"); d.put("padding-left", "0");
         d.put("border-top-width", "0"); d.put("border-right-width", "0"); d.put("border-bottom-width", "0"); d.put("border-left-width", "0");
