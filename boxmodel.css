@@ -1,0 +1,18 @@
+body { padding: 30px; }
+
+#outer {
+    width: 320px;
+    margin: 40px auto;
+    padding: 25px;
+    border: 6px solid #1565c0;
+    background: #e3f2fd;
+}
+
+#inner {
+    margin: 20px;
+    padding: 15px;
+    border: 3px dashed #ef6c00;
+    background: #fff3e0;
+}
+
+#inner b { color: #c62828; }

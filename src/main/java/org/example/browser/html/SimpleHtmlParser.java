@@ -66,7 +66,7 @@ public class SimpleHtmlParser {
                 while (pos < input.length() && input.charAt(pos) != '<') pos++;
                 String text = input.substring(start, pos).replaceAll("\\s+", " ").trim();
                 if (!text.isEmpty()) {
-                    parent.getChildren().add(new TextNode(text));
+                    parent.getChildren().add(new TextNode(decodeEntities(text)));
                 }
             }
         }
@@ -101,7 +101,7 @@ public class SimpleHtmlParser {
                     pos++;
                 }
                 if (quote != 0 && pos < input.length()) pos++; // skip closing quote
-                value = val.toString();
+                value = decodeEntities(val.toString());
             }
             if (!attrName.isEmpty()) attrs.put(attrName.toString().toLowerCase(), value);
         }
@@ -110,6 +110,24 @@ public class SimpleHtmlParser {
 
     private void skipWhitespace() {
         while (pos < input.length() && Character.isWhitespace(input.charAt(pos))) pos++;
+    }
+
+    /** Decodes common HTML character entities in text (and attribute values). */
+    private String decodeEntities(String s) {
+        return s.replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", "\"")
+                .replace("&apos;", "'")
+                .replace("&nbsp;", " ")
+                .replace("&middot;", "·")
+                .replace("&mdash;", "—")
+                .replace("&ndash;", "–")
+                .replace("&hellip;", "…")
+                .replace("&lsquo;", "‘")
+                .replace("&rsquo;", "’")
+                .replace("&ldquo;", "“")
+                .replace("&rdquo;", "”")
+                .replace("&amp;", "&"); // last: so "&amp;lt;" becomes "&lt;" not "<"
     }
 
     /**

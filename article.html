@@ -1,0 +1,59 @@
+<html>
+    <head>
+        <style>
+            body { font-family: Arial; }
+        </style>
+    </head>
+    <body>
+        <div id="topbar">The Browser Engine Blog &middot; Issue #1 &middot; A Miniature Rendering Pipeline</div>
+
+        <div id="hero">
+            <h1>How Our Little Browser Engine Works</h1>
+            <p>One HTML file, one stylesheet, and a few thousand lines of Java.</p>
+        </div>
+
+        <div class="container">
+            <div class="section">
+                <h2>1. Parsing</h2>
+                <p>Every web page starts life as a string of characters. The <span class="code">SimpleHtmlParser</span> walks that string character by character, building a tree of element and text nodes along the way.</p>
+                <p>Attributes are collected, void elements are recognized, and whitespace is collapsed. When the dust settles we have a DOM tree, ready for the next stage.</p>
+                <div class="quote">&ldquo;You can't build a browser without parsing &mdash; it's the front door of the whole pipeline.&rdquo;</div>
+            </div>
+
+            <div class="section">
+                <h2>2. Styling</h2>
+                <p>CSS selectors are matched right-to-left against the DOM tree. The engine understands:</p>
+                <ul>
+                    <li>&bull; descendant, child, adjacent and general sibling combinators</li>
+                    <li>&bull; IDs, classes and element tags, with real specificity</li>
+                    <li>&bull; structural pseudo-classes such as nth-child and first-of-type</li>
+                    <li>&bull; the !important cascade, layered on top of inheritance</li>
+                </ul>
+                <p>Styles are computed once and stored on every element, so the layout stage can read them straight off the DOM.</p>
+            </div>
+
+            <div class="section">
+                <h2>3. Layout</h2>
+                <p>Blocks stack vertically, margins collapse, and auto margins center boxes horizontally. Inline text is measured with real font metrics and wrapped into lines as it overflows.</p>
+                <div class="callout">margin: 0 auto &mdash; the classic centering trick, implemented properly.</div>
+                <p>Anonymous block boxes appear whenever inline content shows up between blocks, exactly like a real browser. The result is a tree of boxes, each with a final position and size.</p>
+            </div>
+
+            <div class="section">
+                <h2>4. Painting</h2>
+                <p>Finally a <span class="code">Renderer</span> paints backgrounds, borders and text onto an image using Java AWT. Add the --boxmodel flag and you get a debug overlay showing the margin, border, padding and content areas of every box.</p>
+            </div>
+
+            <div class="section">
+                <h2>A Little More Reading</h2>
+                <p>Here is some more text to make the page nice and long, so that when it is rendered there is plenty of content to scroll through. Each paragraph wraps automatically, each heading starts a new block, and the whole thing is laid out top to bottom by the block layout engine.</p>
+                <p>The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                <div class="quote">&ldquo;Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.&rdquo;</div>
+                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.</p>
+            </div>
+        </div>
+
+        <div id="footer">Rendered by org.example.browser &mdash; try the --boxmodel flag for the debug overlay.</div>
+    </body>
+</html>

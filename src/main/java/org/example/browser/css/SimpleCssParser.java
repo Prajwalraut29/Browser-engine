@@ -229,7 +229,77 @@ public class SimpleCssParser {
             }
             map.put(prop, new CssDeclaration(value, important));
         }
-        return map;
+        return expandShorthands(map);
+    }
+
+    /**
+     * Expands CSS shorthands into the longhands the layout engine reads:
+     * margin / padding / border-width (1-4 value box form), border (width style color),
+     * and background (treated as background-color).
+     */
+    private Map<String, CssDeclaration> expandShorthands(Map<String, CssDeclaration> m) {
+        Map<String, CssDeclaration> out = new LinkedHashMap<>(m);
+
+        expandBoxShorthand(out, "margin", "margin-", "");
+        expandBoxShorthand(out, "padding", "padding-", "");
+        expandBoxShorthand(out, "border-width", "border-", "-width");
+
+        CssDeclaration b = out.get("border");
+        if (b != null) {
+            String width = "0";
+            for (String tok : b.value.trim().split("\\s+")) {
+                if (tok.matches("(?i)\\d*\\.?\\d+(px|em|rem|%)?") && !"none".equalsIgnoreCase(tok)) {
+                    width = tok;
+                    break;
+                }
+            }
+            for (String side : List.of("border-top-width", "border-right-width",
+                    "border-bottom-width", "border-left-width")) {
+                out.put(side, new CssDeclaration(width, b.important));
+            }
+            out.remove("border");
+        }
+
+        // per-side border: border-left / border-top / ... -> border-left-width
+        for (String side : List.of("top", "right", "bottom", "left")) {
+            CssDeclaration bs = out.get("border-" + side);
+            if (bs != null) {
+                String width = "0";
+                for (String tok : bs.value.trim().split("\\s+")) {
+                    if (tok.matches("(?i)\\d*\\.?\\d+(px|em|rem|%)?") && !"none".equalsIgnoreCase(tok)) {
+                        width = tok;
+                        break;
+                    }
+                }
+                out.put("border-" + side + "-width", new CssDeclaration(width, bs.important));
+                out.remove("border-" + side);
+            }
+        }
+
+        CssDeclaration bg = out.get("background");
+        if (bg != null) {
+            out.put("background-color", new CssDeclaration(bg.value.trim(), bg.important));
+            out.remove("background");
+        }
+        return out;
+    }
+
+    /** margin/padding/border-width box shorthand: 1-4 values, top right bottom left ordering. */
+    private void expandBoxShorthand(Map<String, CssDeclaration> out, String prop, String prefix, String suffix) {
+        CssDeclaration d = out.get(prop);
+        if (d == null) return;
+        String[] v = d.value.trim().split("\\s+");
+        if (v.length >= 1 && v.length <= 4) {
+            String top = v[0];
+            String right = v.length >= 2 ? v[1] : top;
+            String bottom = v.length >= 3 ? v[2] : top;
+            String left = v.length >= 4 ? v[3] : right;
+            out.put(prefix + "top" + suffix, new CssDeclaration(top, d.important));
+            out.put(prefix + "right" + suffix, new CssDeclaration(right, d.important));
+            out.put(prefix + "bottom" + suffix, new CssDeclaration(bottom, d.important));
+            out.put(prefix + "left" + suffix, new CssDeclaration(left, d.important));
+        }
+        out.remove(prop);
     }
 
     // Finds the index of the parenthesis that closes the one at openIdx.

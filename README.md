@@ -1,6 +1,6 @@
 # Browser Engine
 
-A simple Java-based browser engine that parses HTML, builds a DOM tree, applies CSS, and computes styles for every element — a miniature version of the browser rendering pipeline.
+A simple Java-based browser engine that parses HTML, builds a DOM tree, applies CSS, computes styles, lays out the page into boxes, and renders it to a PNG — a miniature version of the browser rendering pipeline.
 
 ## Overview
 
@@ -19,7 +19,16 @@ CSS string
 List<CssRule>
    │  StyleResolver.resolveTree()   → walk the DOM, compute final styles
    ▼
-DOM tree with computedStyle → printed to the console
+DOM tree with computedStyle
+   │  LayoutTreeBuilder.build()     → styled DOM → layout box tree
+   ▼
+Layout tree (LayoutBox)
+   │  LayoutEngine.layout()         → block + inline layout (box model, margins)
+   ▼
+Positioned boxes + text lines
+   │  Renderer.render()             → paint to a PNG (optional box-model overlay)
+   ▼
+out/render.png
 ```
 
 ## Project Structure
@@ -40,7 +49,27 @@ src/main/java/org/example/browser/
 │   ├── CssDeclaration.java   – a property declaration (value + !important flag)
 │   └── SimpleCssParser.java  – CSS string → List<CssRule>
 └── style/
-    └── StyleResolver.java    – computes final styles (defaults + inheritance + rules + inline)
+    └── StyleResolver.java  – computes final styles (defaults + inheritance + rules + inline)
+```
+
+And the layout & rendering stage (added after the style stage):
+
+```
+src/main/java/org/example/browser/layout/
+├── LayoutTreeBuilder.java – styled DOM → layout box tree (block/inline boxes + anonymous blocks)
+├── LayoutEngine.java      – entry point: lays out a tree in a viewport; prints the box tree
+├── LayoutBox.java         – one box: type, element, style spec, dimensions, children, text lines
+├── BoxType.java           – BlockNode / InlineNode / AnonymousBlock
+├── BoxSpec.java           – parsed style: lengths, colors, font info
+├── Length.java            – a length: px / percent / auto
+├── BoxDimensions.java     – content / padding / border / margin rects
+├── Rect.java, EdgesSizes.java – rectangle and per-edge sizes
+├── BlockLayout.java       – block layout: widths, auto margins, child stacking, heights
+├── InlineLayout.java      – wraps inline text into lines (measure + word wrap)
+├── LineBox.java, TextFragment.java – a line and one word in it
+├── TextMetrics.java       – real font metrics via java.awt.Font
+├── MarginCollapser.java   – vertical margin collapsing
+└── Renderer.java          – paints the page to a PNG (with optional box-model debug overlay)
 ```
 
 Bundled sample files (used as defaults when no arguments are given):
@@ -63,11 +92,25 @@ mvn compile
 mvn exec:java
 ```
 
-This uses the bundled `index.html` and `style.css` from `src/main/resources` and prints the extracted CSS, the number of parsed rules, and the DOM tree with computed styles.
+This uses the bundled `index.html` and `style.css` from `src/main/resources` and prints the extracted CSS, the number of parsed rules, the DOM tree with computed styles, the layout tree, and writes `out/render.png`.
 
-### Using your own files
+### CLI arguments
 
-You can load your own HTML and CSS files instead of the hardcoded defaults by passing paths as arguments.
+| Position | Meaning | Default |
+|---|---|---|
+| `args[0]` | HTML file (filesystem path or bundled resource name) | `index.html` |
+| `args[1]` | External CSS file (merged after the embedded `<style>` CSS) | `style.css` |
+| `args[2]` | Viewport width in px | `800` |
+| `args[3]` | Viewport height in px | `600` |
+| `args[4]` | `--boxmodel` → also write `out/render-boxmodel.png` with the margin/border/padding/content debug overlay | — |
+| `args[5]` | Custom output path for the content image (box-model image gets a `-boxmodel` suffix) | `out/render.png` |
+
+### Output folder
+
+Rendered images go into the **`out/`** folder. It is cleared on every run, so it always holds only the **latest** pair:
+
+- `out/render.png` — the plain page (content) image
+- `out/render-boxmodel.png` — with the box-model debug overlay (only if `--boxmodel` is passed)
 
 **HTML file only** (CSS comes from the `<style>` block inside the HTML):
 
@@ -85,6 +128,12 @@ mvn exec:java "-Dexec.args=C:\path\to\page.html C:\path\to\style.css"
 
 ```bash
 mvn exec:java "-Dexec.args=index.html style.css"
+```
+
+**The box-model demo, with the debug overlay:**
+
+```bash
+mvn exec:java "-Dexec.args=boxmodel.html boxmodel.css 900 500 --boxmodel"
 ```
 
 ### Alternative: run with `java` directly
@@ -159,12 +208,15 @@ p.note { color: red !important; }       /* beats any normal rule, even #wrap p  
 - `:not()` accepts only a single compound selector (no comma lists or combinators).
 - Structural pseudo-classes count only element siblings (whitespace-only text nodes are already stripped by the HTML parser).
 - No cascade tie-breaking beyond source order, no `!important` for inline styles beyond what is listed above.
+- The layout engine handles block and inline boxes only (no floats, positioning, flex/grid); only `background-color` (plus the `background` shorthand) and `border-*-width` are painted; inline elements get no box (their width is measured but they don't produce boxes or wrap on their own line).
+- `TextMetrics` uses Java AWT font metrics, so results vary with the platform's fonts.
 
 ## Next Steps
 
 You can extend this project by adding:
 
-- a layout / rendering stage (the natural next pipeline step)
+- inline element boxes (width/height on `span`/`a` etc.), line-height, and `vertical-align`
+- floats, `position`, flexbox / grid layout
 - attribute selectors (`[type="text"]`), pseudo-elements (`::before`), richer `:not()` lists
 - multi-cascade layering (user agent < user < author < !important)
 - navigation and page loading over HTTP
