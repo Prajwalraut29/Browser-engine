@@ -5,7 +5,7 @@ import org.example.browser.css.*;
 import org.example.browser.style.StyleResolver;
 import org.example.browser.dom.*;
 import org.example.browser.layout.*;
-
+import org.example.browser.report.ReportGenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -58,9 +58,9 @@ public class Main {
         LayoutEngine.dumpTree(layoutRoot, 0);
 
         // 9. Render the page to a PNG. Output goes into the "out" folder, which is
-        //    cleared each run so it always shows only the latest content image
-        //    (render.png) and box-model debug image (render-boxmodel.png).
-        //    A custom output path via args[5] bypasses the folder.
+        // cleared each run so it always shows only the latest content image
+        // (render.png) and box-model debug image (render-boxmodel.png).
+        // A custom output path via args[5] bypasses the folder.
         boolean boxModel = args.length > 4 && "--boxmodel".equals(args[4]);
         Path outDir = Path.of("out");
         String outPath;
@@ -75,6 +75,18 @@ public class Main {
             outBox = outDir.resolve("render-boxmodel.png").toString();
         }
         Renderer.render(layoutRoot, viewportWidth, viewportHeight, outPath);
+        // 10. Write the interactive parse-tree report (out/report.html)
+        String report = ReportGenerator.generate(html, css, document, rules);
+        Path reportPath;
+        if (args.length > 5) {
+            Path parent = Path.of(outPath).toAbsolutePath().getParent();
+            reportPath = (parent == null ? Path.of(".") : parent).resolve("report.html");
+        } else {
+            reportPath = outDir.resolve("report.html");
+        }
+        Files.writeString(reportPath, report);
+        System.out.println("Saved " + reportPath);
+
         if (boxModel) {
             Renderer.render(layoutRoot, viewportWidth, viewportHeight, outBox, true);
         }
@@ -90,10 +102,12 @@ public class Main {
         }
     }
 
-    // demo.png + "--boxmodel" flag -> "demo-boxmodel.png" (before the .png extension)
+    // demo.png + "--boxmodel" flag -> "demo-boxmodel.png" (before the .png
+    // extension)
     private static String insertSuffix(String path, String suffix) {
         int dot = path.lastIndexOf('.');
-        if (dot == -1) return path + suffix + ".png";
+        if (dot == -1)
+            return path + suffix + ".png";
         return path.substring(0, dot) + suffix + path.substring(dot);
     }
 
