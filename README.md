@@ -211,6 +211,21 @@ p.note { color: red !important; }       /* beats any normal rule, even #wrap p  
 - The layout engine handles block and inline boxes only (no floats, positioning, flex/grid); only `background-color` (plus the `background` shorthand) and `border-*-width` are painted; inline elements get no box (their width is measured but they don't produce boxes or wrap on their own line).
 - `TextMetrics` uses Java AWT font metrics, so results vary with the platform's fonts.
 
+## Testing
+
+The engine ships with unit tests for the core pipeline, written in **JUnit 4** under `src/test/java/org/example/browser/`:
+
+- `html/SimpleHtmlParserTest` — DOM parsing, attributes, comments, entities, whitespace
+- `css/SimpleCssParserTest` — selectors, combinators, pseudo-classes, `!important`, specificity, shorthands
+- `style/StyleResolverTest` — cascade priority, inheritance, inline styles
+- `layout/LengthTest` — length parsing and resolution
+
+Run them with:
+
+```bash
+mvn test
+```
+
 ## Next Steps
 
 You can extend this project by adding:
